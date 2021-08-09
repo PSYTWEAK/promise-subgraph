@@ -1,0 +1,35 @@
+specVersion: 0.0.2
+schema:
+  file: schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: PromiseCore
+    network: kovan
+    source:
+      address: "0xb6aadB69f89144fb987dF1aA945B2857db058019"
+      abi: PromiseCore
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyscript
+      entities:
+        - PromiseCreated
+        - PromiseExecuted
+        - PromiseJoined
+        - PromisePaid
+        - PromisePendingAmountClosed
+      abis:
+        - name: PromiseCore
+          file: PromiseCore/abis/PromiseCore.json
+      eventHandlers:
+        - event: PromiseCreated(uint256,address,address,uint256,address,uint256,uint256)
+          handler: handlePromiseCreated
+        - event: PromiseExecuted(uint256,address,uint256,uint256)
+          handler: handlePromiseExecuted
+        - event: PromiseJoined(uint256,address,uint256)
+          handler: handlePromiseJoined
+        - event: PromisePaid(uint256,address,uint256)
+          handler: handlePromisePaid
+        - event: PromisePendingAmountClosed(uint256,address,uint256)
+          handler: handlePromisePendingAmountClosed
+      file: PromiseCore/PromiseCore.wasm

@@ -1,71 +1,68 @@
-import { BigInt } from "@graphprotocol/graph-ts"
+import { BigInt, Address } from "@graphprotocol/graph-ts";
 import {
   PromiseCore,
   PromiseCreated,
   PromiseExecuted,
   PromiseJoined,
   PromisePaid,
-  PromisePendingAmountClosed
-} from "../generated/PromiseCore/PromiseCore"
-import { ExampleEntity } from "../generated/schema"
+  PromisePendingAmountClosed,
+} from "../generated/PromiseCore/PromiseCore";
+import { JoinablePromise, Pair } from "../generated/schema";
 
 export function handlePromiseCreated(event: PromiseCreated): void {
-  // Entities can be loaded from the store using a string ID; this ID
-  // needs to be unique across all entities of the same type
-  let entity = ExampleEntity.load(event.transaction.from.toHex())
+  let joinablePromise = JoinablePromise.load(event.params.id.toString());
+  joinablePromise.creatorToken = event.params.creatorToken;
+  joinablePromise.joinerToken = event.params.joinerToken;
+  joinablePromise.expirationTimestamp = event.params.expirationTimestamp;
+  joinablePromise.creatorTokenPrice = event.params.creatorAmount.div(event.params.joinerAmount);
+  joinablePromise.remainingPositionSize = event.params.creatorAmount;
+  joinablePromise.creatorDebt = event.params.creatorAmount.div(BigInt.fromI32(2));
+  joinablePromise.save();
 
-  // Entities only exist after they have been saved to the store;
-  // `null` checks allow to create entities on demand
-  if (entity == null) {
-    entity = new ExampleEntity(event.transaction.from.toHex())
-
-    // Entity fields can be set using simple assignments
-    entity.count = BigInt.fromI32(0)
-  }
-
-  // BigInt and BigDecimal math are supported
-  entity.count = entity.count + BigInt.fromI32(1)
-
-  // Entity fields can be set based on event parameters
-  entity.creator = event.params.creator
-  entity.creatorToken = event.params.creatorToken
-
-  // Entities can be written to the store with `.save()`
-  entity.save()
-
-  // Note: If a handler doesn't require existing field values, it is faster
-  // _not_ to load the entity from the store. Instead, create it fresh with
-  // `new Entity(...)`, set the fields that should be updated and save the
-  // entity back to the store. Fields that were not set or unset remain
-  // unchanged, allowing for partial updates to be applied.
-
-  // It is also possible to access smart contracts from mappings. For
-  // example, the contract that has emitted the event can be connected to
-  // with:
-  //
-  // let contract = Contract.bind(event.address)
-  //
-  // The following functions can then be called on this contract to access
-  // state variables and other data:
-  //
-  // - contract.feeAddress(...)
-  // - contract.feeBP(...)
-  // - contract.joiners(...)
-  // - contract.joinersLength(...)
-  // - contract.lastId(...)
-  // - contract.length(...)
-  // - contract.list(...)
-  // - contract.promises(...)
-  // - contract.tail(...)
-  // - contract.divMul(...)
+  let pair = Pair.load(event.params.creatorToken.toHexString() && event.params.joinerToken.toHexString());
+  pair.totalLiquidityCreatorToken = pair.totalLiquidityCreatorToken.plus(event.params.creatorAmount.div(BigInt.fromI32(2)));
+  pair.save();
 }
 
-export function handlePromiseExecuted(event: PromiseExecuted): void {}
+export function handlePromiseExecuted(event: PromiseExecuted): void {
+  let joinablePromise = JoinablePromise.load(event.params.id.toString());
+  let pair = Pair.load(joinablePromise.creatorToken.toHexString() && joinablePromise.joinerToken.toHexString());
+  pair.totalLiquidityCreatorToken = pair.totalLiquidityCreatorToken.minus(event.params.creatorTokenAmount);
+  pair.totalLiquidityJoinerToken = pair.totalLiquidityJoinerToken.minus(event.params.joinerTokenAmount);
+  pair.save();
+}
 
-export function handlePromiseJoined(event: PromiseJoined): void {}
+export function handlePromiseJoined(event: PromiseJoined): void {
+  let joinablePromise = JoinablePromise.load(event.params.id.toString());
+  joinablePromise.remainingPositionSize = joinablePromise.remainingPositionSize.minus(joinablePromise.creatorTokenPrice.times(event.params.amount));
+  joinablePromise.save();
+  let pair = Pair.load(joinablePromise.creatorToken.toHexString() && joinablePromise.joinerToken.toHexString());
+  pair.totalLiquidityJoinerToken = pair.totalLiquidityJoinerToken.plus(event.params.amount);
+  pair.save();
+}
 
-export function handlePromisePaid(event: PromisePaid): void {}
+export function handlePromisePaid(event: PromisePaid): void {
+  let joinablePromise = JoinablePromise.load(event.params.id.toString());
+  let pair = Pair.load(joinablePromise.creatorToken.toHexString() && joinablePromise.joinerToken.toHexString());
+  let promiseCore = PromiseCore.bind(event.address);
+  let promise = promiseCore.promises(event.params.id);
+  if (promise.value0 === event.params.account) {
+    joinablePromise.creatorDebt = BigInt.fromI32(0);
+    pair.totalLiquidityCreatorToken = pair.totalLiquidityCreatorToken.plus(event.params.amount);
+  } else {
+    joinablePromise.joinerDebt = joinablePromise.joinerDebt.minus(event.params.amount);
+    pair.totalLiquidityJoinerToken = pair.totalLiquidityJoinerToken.plus(event.params.amount);
+  }
+  pair.save();
+}
 
-export function handlePromisePendingAmountClosed(
-  event: PromisePendingAmountClosed
-): void {}
+export function handlePromisePendingAmountClosed(event: PromisePendingAmountClosed): void {
+  let joinablePromise = JoinablePromise.load(event.params.id.toString());
+  joinablePromise.remainingPositionSize = BigInt.fromI32(0);
+  joinablePromise.creatorDebt = BigInt.fromI32(0);
+  joinablePromise.save();
+
+  let pair = Pair.load(joinablePromise.creatorToken.toHexString() && joinablePromise.joinerToken.toHexString());
+  pair.totalLiquidityCreatorToken = pair.totalLiquidityCreatorToken.minus(event.params.refund);
+  pair.save();
+}
