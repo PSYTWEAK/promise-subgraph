@@ -7,17 +7,17 @@ type JoinablePromise @entity {
   joinerToken: Bytes!
 
   # Price of each creator token per joiner token
-  creatorTokenPrice: BigInt!
+  creatorTokenPriceInJoinerToken: BigDecimal!
 
   # Amount of creator tokens left for joiners
   remainingPositionSize: BigInt!
 
   # Amount of debt in the promise
   creatorDebt: BigInt!
-  joinerDebt: BigInt!
+  joinerDebt: BigInt
 
   # number of account which joined this promise
-  numOfJoiners: BigInt!
+  numOfJoiners: BigInt
 
   # Expiration date in unix
   expirationTimestamp: BigInt!
@@ -28,6 +28,6 @@ type Pair @entity {
   id: ID!
 
   # Token amounts across all active promises for this pair
-  totalLiquidityCreatorToken: BigInt!
-  totalLiquidityJoinerToken: BigInt!
+  totalLiquidityCreatorToken: BigInt
+  totalLiquidityJoinerToken: BigInt
 }

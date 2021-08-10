@@ -60,13 +60,13 @@ export class JoinablePromise extends Entity {
     this.set("joinerToken", Value.fromBytes(value));
   }
 
-  get creatorTokenPrice(): BigInt {
-    let value = this.get("creatorTokenPrice");
-    return value.toBigInt();
+  get creatorTokenPriceInJoinerToken(): BigDecimal {
+    let value = this.get("creatorTokenPriceInJoinerToken");
+    return value.toBigDecimal();
   }
 
-  set creatorTokenPrice(value: BigInt) {
-    this.set("creatorTokenPrice", Value.fromBigInt(value));
+  set creatorTokenPriceInJoinerToken(value: BigDecimal) {
+    this.set("creatorTokenPriceInJoinerToken", Value.fromBigDecimal(value));
   }
 
   get remainingPositionSize(): BigInt {
@@ -87,22 +87,38 @@ export class JoinablePromise extends Entity {
     this.set("creatorDebt", Value.fromBigInt(value));
   }
 
-  get joinerDebt(): BigInt {
+  get joinerDebt(): BigInt | null {
     let value = this.get("joinerDebt");
-    return value.toBigInt();
+    if (value === null || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
   }
 
-  set joinerDebt(value: BigInt) {
-    this.set("joinerDebt", Value.fromBigInt(value));
+  set joinerDebt(value: BigInt | null) {
+    if (value === null) {
+      this.unset("joinerDebt");
+    } else {
+      this.set("joinerDebt", Value.fromBigInt(value as BigInt));
+    }
   }
 
-  get numOfJoiners(): BigInt {
+  get numOfJoiners(): BigInt | null {
     let value = this.get("numOfJoiners");
-    return value.toBigInt();
+    if (value === null || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
   }
 
-  set numOfJoiners(value: BigInt) {
-    this.set("numOfJoiners", Value.fromBigInt(value));
+  set numOfJoiners(value: BigInt | null) {
+    if (value === null) {
+      this.unset("numOfJoiners");
+    } else {
+      this.set("numOfJoiners", Value.fromBigInt(value as BigInt));
+    }
   }
 
   get expirationTimestamp(): BigInt {
@@ -145,21 +161,37 @@ export class Pair extends Entity {
     this.set("id", Value.fromString(value));
   }
 
-  get totalLiquidityCreatorToken(): BigInt {
+  get totalLiquidityCreatorToken(): BigInt | null {
     let value = this.get("totalLiquidityCreatorToken");
-    return value.toBigInt();
+    if (value === null || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
   }
 
-  set totalLiquidityCreatorToken(value: BigInt) {
-    this.set("totalLiquidityCreatorToken", Value.fromBigInt(value));
+  set totalLiquidityCreatorToken(value: BigInt | null) {
+    if (value === null) {
+      this.unset("totalLiquidityCreatorToken");
+    } else {
+      this.set("totalLiquidityCreatorToken", Value.fromBigInt(value as BigInt));
+    }
   }
 
-  get totalLiquidityJoinerToken(): BigInt {
+  get totalLiquidityJoinerToken(): BigInt | null {
     let value = this.get("totalLiquidityJoinerToken");
-    return value.toBigInt();
+    if (value === null || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
   }
 
-  set totalLiquidityJoinerToken(value: BigInt) {
-    this.set("totalLiquidityJoinerToken", Value.fromBigInt(value));
+  set totalLiquidityJoinerToken(value: BigInt | null) {
+    if (value === null) {
+      this.unset("totalLiquidityJoinerToken");
+    } else {
+      this.set("totalLiquidityJoinerToken", Value.fromBigInt(value as BigInt));
+    }
   }
 }
